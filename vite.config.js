@@ -30,19 +30,7 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/steam-market/, '/market'),
         configure: steamHeaders,
       },
-      '/csfloat-inspect': {
-        target: 'https://api.csfloat.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/csfloat-inspect/, ''),
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-            proxyReq.setHeader('Origin', 'https://csfloat.com')
-            proxyReq.setHeader('Referer', 'https://csfloat.com/')
-            proxyReq.setHeader('Accept', 'application/json')
-          })
-        },
-      },
+
       '/csfloat': {
         target: 'https://csfloat.com',
         changeOrigin: true,

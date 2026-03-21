@@ -4,6 +4,8 @@ import PriceModal from './PriceChart'
 
 const STEAM_IMAGE_BASE = 'https://community.akamai.steamstatic.com/economy/image/'
 
+const AUTO_LOGIN = true
+
 const RARITY_COLORS = {
   Rarity_Common:      '#b0c3d9',
   Rarity_Uncommon:    '#5e98d9',
@@ -33,10 +35,9 @@ export default function App() {
 
   useEffect(() => {
     const devId = import.meta.env.VITE_DEV_STEAM_ID
-    if (devId) fetchInventory(devId)
+    if (AUTO_LOGIN && devId) fetchInventory(devId)
   }, [])
   const [items, setItems] = useState([])
-  const [floats, setFloats] = useState({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [selectedItem, setSelectedItem] = useState(null)
@@ -44,7 +45,6 @@ export default function App() {
   async function fetchInventory(id) {
     setLoading(true)
     setError(null)
-    setFloats({})
     try {
       const allAssets = []
       const descMap = {}
@@ -81,9 +81,6 @@ export default function App() {
 
       setItems(merged)
       setSteamId(id)
-
-      // Fetch floats for all wearable items in the background
-      fetchFloats(merged, id)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -91,25 +88,6 @@ export default function App() {
     }
   }
 
-  function fetchFloats(items, id) {
-    const wearable = items.filter(item =>
-      item.tags?.some(t => t.category === 'Exterior') && item.actions?.[0]?.link
-    )
-    wearable.forEach(item => {
-      const inspectUrl = item.actions[0].link
-        .replace('%owner_steamid%', id)
-        .replace('%assetid%', item.assetid)
-      fetch(`/csfloat-inspect/?url=${encodeURIComponent(inspectUrl)}`)
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          const float = data?.iteminfo?.floatvalue
-          if (float != null) {
-            setFloats(prev => ({ ...prev, [item.assetid]: float }))
-          }
-        })
-        .catch(() => {})
-    })
-  }
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -174,9 +152,6 @@ export default function App() {
                     {item.tags?.find(t => t.category === 'Exterior') && (
                       <span className="item-wear">
                         {item.tags.find(t => t.category === 'Exterior').localized_tag_name}
-                        {floats[item.assetid] != null && (
-                          <span className="item-float">{floats[item.assetid].toFixed(4)}</span>
-                        )}
                       </span>
                     )}
                   </div>
