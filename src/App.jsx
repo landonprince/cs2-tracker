@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import PriceModal from './PriceChart'
 
@@ -29,6 +29,11 @@ function getRarity(item) {
 export default function App() {
   const [profileInput, setProfileInput] = useState('')
   const [steamId, setSteamId] = useState(null)
+
+  useEffect(() => {
+    const devId = import.meta.env.VITE_DEV_STEAM_ID
+    if (devId) fetchInventory(devId)
+  }, [])
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
