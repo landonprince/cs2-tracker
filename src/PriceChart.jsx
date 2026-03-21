@@ -263,7 +263,7 @@ export default function PriceModal({ item, onClose }) {
                 <p className="chart-label">CSFloat Marketplace — 30-Day Price (USD)</p>
                 {csfloatStats && (
                   <div className="modal-prices">
-                    <span className="price-main" style={{ color: '#3e9c35' }}>${csfloatStats.lastPrice.toFixed(2)}</span>
+                    <span className="price-main">${csfloatStats.lastPrice.toFixed(2)}</span>
                     <span className="price-sub">median ${csfloatStats.median.toFixed(2)}</span>
                     <span className="price-vol">{csfloatStats.soldToday.toLocaleString()} sold today</span>
                   </div>
@@ -272,7 +272,7 @@ export default function PriceModal({ item, onClose }) {
               {csfloatData
                 ? <PriceLineChart
                     data={csfloatData}
-                    color="#3e9c35"
+                    color="#0078D0"
                     gradId="csfloatGrad"
                     formatDateFn={formatISODate}
                   />
