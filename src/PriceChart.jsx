@@ -41,6 +41,26 @@ function aggregateCSFloatByDay(sales) {
     ])
 }
 
+function computeCSFloatStats(sales) {
+  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000
+  const recent = sales.filter(s => new Date(s.sold_at).getTime() >= cutoff)
+  if (recent.length === 0) return null
+
+  const today = new Date().toISOString().slice(0, 10)
+  const soldToday = sales.filter(s => s.sold_at.slice(0, 10) === today).length
+
+  const sorted = [...recent].sort((a, b) => new Date(b.sold_at) - new Date(a.sold_at))
+  const lastPrice = sorted[0].price / 100
+
+  const prices = recent.map(s => s.price / 100).sort((a, b) => a - b)
+  const mid = Math.floor(prices.length / 2)
+  const median = prices.length % 2 === 0
+    ? (prices[mid - 1] + prices[mid]) / 2
+    : prices[mid]
+
+  return { lastPrice, median, soldToday }
+}
+
 function formatISODate(dateStr) {
   const d = new Date(dateStr + 'T12:00:00')
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -153,6 +173,7 @@ export default function PriceModal({ item, onClose }) {
   const [steamData, setSteamData] = useState(null)
   const [csfloatData, setCSFloatData] = useState(null)
   const [currentPrice, setCurrentPrice] = useState(null)
+  const [csfloatStats, setCSFloatStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [csfloatError, setCSFloatError] = useState(null)
@@ -177,6 +198,8 @@ export default function PriceModal({ item, onClose }) {
       setSteamData(filtered)
 
       if (Array.isArray(csfloatSales) && csfloatSales.length > 0) {
+        const stats = computeCSFloatStats(csfloatSales)
+        if (stats) setCSFloatStats(stats)
         const aggregated = aggregateCSFloatByDay(csfloatSales)
         if (aggregated.length >= 2) setCSFloatData(aggregated)
         else setCSFloatError('Not enough CSFloat sales in the past 30 days')
@@ -201,13 +224,6 @@ export default function PriceModal({ item, onClose }) {
           <img src={`${STEAM_IMAGE_BASE}${item.icon_url}`} alt={item.name} className="modal-icon" />
           <div className="modal-title">
             <h2>{item.market_hash_name || item.name}</h2>
-            {currentPrice && (
-              <div className="modal-prices">
-                <span className="price-main">{currentPrice.lowest_price}</span>
-                <span className="price-sub">median {currentPrice.median_price}</span>
-                <span className="price-vol">{Number(currentPrice.volume).toLocaleString()} sold today</span>
-              </div>
-            )}
           </div>
         </div>
 
@@ -222,7 +238,16 @@ export default function PriceModal({ item, onClose }) {
 
           {steamData && (
             <>
-              <p className="chart-label">Steam Community Market — 30-Day Price (USD)</p>
+              <div className="chart-header">
+                <p className="chart-label">Steam Community Market — 30-Day Price (USD)</p>
+                {currentPrice && (
+                  <div className="modal-prices">
+                    <span className="price-main">{currentPrice.lowest_price}</span>
+                    <span className="price-sub">median {currentPrice.median_price}</span>
+                    <span className="price-vol">{Number(currentPrice.volume).toLocaleString()} sold today</span>
+                  </div>
+                )}
+              </div>
               <PriceLineChart
                 data={steamData}
                 color="var(--accent)"
@@ -234,7 +259,16 @@ export default function PriceModal({ item, onClose }) {
 
           {steamData && (
             <>
-              <p className="chart-label chart-label-second">CSFloat Marketplace — 30-Day Price (USD)</p>
+              <div className="chart-header chart-header-second">
+                <p className="chart-label">CSFloat Marketplace — 30-Day Price (USD)</p>
+                {csfloatStats && (
+                  <div className="modal-prices">
+                    <span className="price-main" style={{ color: '#f97316' }}>${csfloatStats.lastPrice.toFixed(2)}</span>
+                    <span className="price-sub">median ${csfloatStats.median.toFixed(2)}</span>
+                    <span className="price-vol">{csfloatStats.soldToday.toLocaleString()} sold today</span>
+                  </div>
+                )}
+              </div>
               {csfloatData
                 ? <PriceLineChart
                     data={csfloatData}

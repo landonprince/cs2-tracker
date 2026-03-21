@@ -323,14 +323,23 @@
   min-height: 100px;
 }
 
-.chart-label {
-  font-size: 12px;
-  color: var(--text);
+.chart-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
-.chart-label-second {
+.chart-header-second {
   margin-top: 28px;
+}
+
+.chart-label {
+  font-size: 12px;
+  color: var(--text);
+  margin: 0;
 }
 
 .chart-unavailable {
