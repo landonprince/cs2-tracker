@@ -10,11 +10,70 @@
 }
 
 /* ── Landing page ─────────────────────────────────────────── */
-.landing h1 {
-  font-size: 48px;
-  letter-spacing: -1.5px;
-  margin: 0 0 8px;
+.landing {
+  gap: 20px;
+}
+
+.landing-badge {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  padding: 4px 14px;
+  border-radius: 999px;
+}
+
+.landing-title {
+  font-size: 72px;
+  font-weight: 700;
+  letter-spacing: -3px;
+  margin: 0;
   color: var(--text-h);
+  line-height: 1;
+
+  @media (max-width: 600px) {
+    font-size: 52px;
+  }
+}
+
+.landing-accent {
+  color: var(--accent);
+}
+
+.landing-sub {
+  color: var(--text);
+  font-size: 16px;
+  max-width: 380px;
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+
+.landing-features {
+  display: flex;
+  gap: 32px;
+  margin-top: 16px;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+}
+
+.landing-feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.feature-icon {
+  font-size: 16px;
 }
 
 .subtitle {
@@ -186,7 +245,7 @@
 }
 
 .item-img-wrap {
-  background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(145deg, #0d0e13 0%, #1b1c24 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -223,6 +282,27 @@
   font-size: 11px;
   color: var(--text);
   opacity: 0.75;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+
+/* ── Steam login button ───────────────────────────────────── */
+.steam-login-btn {
+  display: inline-block;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.steam-login-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.steam-login-btn img {
+  display: block;
+  height: 50px;
+  width: auto;
 }
 
 /* ── Modal ────────────────────────────────────────────────── */
@@ -281,7 +361,7 @@
   width: 80px;
   height: 60px;
   object-fit: contain;
-  background: linear-gradient(145deg, #1a1a2e, #16213e);
+  background: linear-gradient(145deg, #0d0e13, #1b1c24);
   border-radius: 6px;
   padding: 6px;
   flex-shrink: 0;

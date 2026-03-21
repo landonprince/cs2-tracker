@@ -18,11 +18,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/steam-inventory': {
-        target: 'https://steamcommunity.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/steam-inventory/, '/inventory'),
-        configure: steamHeaders,
+      '/auth': {
+        target: 'http://localhost:3001',
+        changeOrigin: false,
+      },
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: false,
       },
       '/steam-market': {
         target: 'https://steamcommunity.com',

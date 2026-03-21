@@ -4,8 +4,6 @@ import PriceModal from './PriceChart'
 
 const STEAM_IMAGE_BASE = 'https://community.akamai.steamstatic.com/economy/image/'
 
-const AUTO_LOGIN = true
-
 const RARITY_COLORS = {
   Rarity_Common:      '#b0c3d9',
   Rarity_Uncommon:    '#5e98d9',
@@ -16,31 +14,34 @@ const RARITY_COLORS = {
   Rarity_Contraband:  '#e4ae39',
 }
 
-function parseSteamId(input) {
-  const trimmed = input.trim()
-  if (/^\d{17}$/.test(trimmed)) return trimmed
-  const match = trimmed.match(/steamcommunity\.com\/profiles\/(\d{17})/)
-  if (match) return match[1]
-  return null
-}
-
 function getRarity(item) {
   const internal = item.tags?.find(t => t.category === 'Rarity')?.internal_name ?? null
   return internal?.replace(/_(Weapon|Character|Equipment)$/, '') ?? null
 }
 
 export default function App() {
-  const [profileInput, setProfileInput] = useState('')
-  const [steamId, setSteamId] = useState(null)
+  const [steamId, setSteamId]           = useState(null)
+  const [items, setItems]               = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [error, setError]               = useState(null)
+  const [selectedItem, setSelectedItem] = useState(null)
 
   useEffect(() => {
-    const devId = import.meta.env.VITE_DEV_STEAM_ID
-    if (AUTO_LOGIN && devId) fetchInventory(devId)
+    fetch('/api/session')
+      .then(r => r.json())
+      .then(({ steamId }) => {
+        if (steamId) fetchInventory(steamId)
+        else setLoading(false)
+      })
+      .catch(() => setLoading(false))
   }, [])
-  const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [selectedItem, setSelectedItem] = useState(null)
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('auth') === 'failed') {
+      setError('Steam login failed — please try again.')
+      window.history.replaceState({}, '', '/')
+    }
+  }, [])
 
   async function fetchInventory(id) {
     setLoading(true)
@@ -50,18 +51,15 @@ export default function App() {
       const descMap = {}
       let lastAssetId = null
 
-      // Steam caps count at 2000; paginate with start_assetid for larger inventories
       while (true) {
-        const url = lastAssetId
-          ? `/steam-inventory/${id}/730/2?l=english&count=2000&start_assetid=${lastAssetId}`
-          : `/steam-inventory/${id}/730/2?l=english&count=2000`
-
-        const res = await fetch(url)
-        if (!res.ok) throw new Error(`Steam returned ${res.status} — check that your inventory is set to Public in Steam privacy settings`)
+        const qs = lastAssetId ? `?start_assetid=${lastAssetId}` : ''
+        const res = await fetch(`/api/inventory${qs}`)
+        if (res.status === 401) { setSteamId(null); setLoading(false); return }
+        if (!res.ok) throw new Error(`Steam returned ${res.status} — make sure your inventory is Public`)
         const data = await res.json()
 
         if (!data.assets || !data.descriptions) {
-          if (allAssets.length === 0) throw new Error('Inventory is empty or set to private on Steam')
+          if (allAssets.length === 0) throw new Error('Inventory is empty or set to Private on Steam')
           break
         }
 
@@ -88,25 +86,16 @@ export default function App() {
     }
   }
 
-
-  function handleSubmit(e) {
-    e.preventDefault()
-    const id = parseSteamId(profileInput)
-    if (!id) {
-      setError(
-        'Enter a Steam64 ID (17 digits) or a profile URL like steamcommunity.com/profiles/76561198...\n' +
-        'Custom URLs (steamcommunity.com/id/...) are not supported — use your numeric profile URL.'
-      )
-      return
-    }
-    fetchInventory(id)
+  function handleLogout() {
+    fetch('/auth/logout', { method: 'POST' })
+      .then(() => { setSteamId(null); setItems([]) })
   }
 
   if (loading) {
     return (
       <div className="center-screen">
         <div className="spinner" />
-        <p>Loading inventory…</p>
+        <p>{steamId ? 'Loading inventory…' : 'Checking session…'}</p>
       </div>
     )
   }
@@ -115,12 +104,10 @@ export default function App() {
     return (
       <div className="inventory-page">
         <header className="inv-header">
-          <h1>CS2 Inventory</h1>
+          <h1>CS<span style={{color:'var(--accent)'}}>Assets</span></h1>
           <div className="inv-meta">
             <span className="item-count">{items.length} items</span>
-            <button className="btn-outline" onClick={() => { setSteamId(null); setItems([]) }}>
-              Change Profile
-            </button>
+            <button className="btn-outline" onClick={handleLogout}>Sign Out</button>
           </div>
         </header>
 
@@ -132,6 +119,7 @@ export default function App() {
               const rarity = getRarity(item)
               const color = RARITY_COLORS[rarity] ?? '#6b6375'
               const marketable = item.marketable === 1
+              const wear = item.tags?.find(t => t.category === 'Exterior')
               return (
                 <div
                   key={item.assetid}
@@ -149,11 +137,7 @@ export default function App() {
                   </div>
                   <div className="item-info">
                     <span className="item-name">{item.market_hash_name || item.name}</span>
-                    {item.tags?.find(t => t.category === 'Exterior') && (
-                      <span className="item-wear">
-                        {item.tags.find(t => t.category === 'Exterior').localized_tag_name}
-                      </span>
-                    )}
+                    {wear && <span className="item-wear">{wear.localized_tag_name}</span>}
                   </div>
                 </div>
               )
@@ -161,32 +145,44 @@ export default function App() {
           </div>
         )}
 
-      {selectedItem && (
-        <PriceModal item={selectedItem} onClose={() => setSelectedItem(null)} />
-      )}
+        {selectedItem && (
+          <PriceModal item={selectedItem} onClose={() => setSelectedItem(null)} />
+        )}
       </div>
     )
   }
 
   return (
     <div className="center-screen landing">
-      <h1>CS2 Skin Tracker</h1>
-      <p className="subtitle">Enter your Steam profile to view your CS2 inventory</p>
+      <div className="landing-badge">CS2 Inventory Tracker</div>
+      <h1 className="landing-title">CS<span className="landing-accent">Assets</span></h1>
+      <p className="landing-sub">Track your CS2 inventory value and market prices in one place.</p>
 
-      <form className="profile-form" onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={profileInput}
-          onChange={e => { setProfileInput(e.target.value); setError(null) }}
-          placeholder="Steam64 ID or steamcommunity.com/profiles/..."
-          autoFocus
+      <a href="/auth/steam" className="steam-login-btn">
+        <img
+          src="https://community.cloudflare.steamstatic.com/public/images/signinthroughsteam/sits_01.png"
+          alt="Sign in through Steam"
         />
-        <button type="submit" className="btn-primary">Load Inventory</button>
-      </form>
+      </a>
 
       {error && <p className="error">{error}</p>}
 
-      <p className="hint">Your Steam inventory must be set to <strong>Public</strong></p>
+      <p className="hint">Inventory must be set to <strong>Public</strong> on Steam</p>
+
+      <div className="landing-features">
+        <div className="landing-feature">
+          <span className="feature-icon">📦</span>
+          <span>Full inventory overview</span>
+        </div>
+        <div className="landing-feature">
+          <span className="feature-icon">📈</span>
+          <span>30-day price charts</span>
+        </div>
+        <div className="landing-feature">
+          <span className="feature-icon">🔁</span>
+          <span>Steam &amp; CSFloat data</span>
+        </div>
+      </div>
     </div>
   )
 }
