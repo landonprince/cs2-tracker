@@ -186,6 +186,7 @@
 .item-count {
   font-size: 14px;
   color: var(--text);
+  line-height: 1;
 }
 
 .btn-outline {
@@ -202,6 +203,240 @@
 .btn-outline:hover {
   border-color: var(--accent);
   background: var(--accent-bg);
+}
+
+.inv-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.control-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  color: var(--text);
+  opacity: 0.55;
+  min-width: 42px;
+  flex-shrink: 0;
+}
+
+/* ── Sort select ──────────────────────────────────────────── */
+.sort-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sort-icon {
+  position: absolute;
+  left: 10px;
+  width: 14px;
+  height: 14px;
+  color: var(--text);
+  opacity: 0.6;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.select-chevron {
+  position: absolute;
+  right: 9px;
+  width: 14px;
+  height: 14px;
+  color: var(--text);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.inv-select {
+  appearance: none;
+  padding: 7px 30px 7px 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text-h);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+  min-width: 200px;
+}
+
+.inv-select:hover,
+.inv-select:focus {
+  border-color: var(--accent);
+}
+
+/* ── Filter pills ─────────────────────────────────────────── */
+.filter-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.filter-pill:hover {
+  border-color: color-mix(in srgb, var(--text-h) 40%, transparent);
+  color: var(--text-h);
+}
+
+.filter-pill.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+/* Rarity pills — active state uses rarity color */
+.rarity-pill.active {
+  border-color: color-mix(in srgb, var(--pill-color) 70%, transparent);
+  background: color-mix(in srgb, var(--pill-color) 12%, transparent);
+}
+
+.pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pill-color, var(--accent));
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.rarity-pill.active .pill-dot {
+  opacity: 1;
+}
+
+/* Wear pills — show abbreviation on narrow screens */
+.wear-abbr {
+  display: none;
+}
+
+.wear-full {
+  display: inline;
+}
+
+@media (max-width: 700px) {
+  .wear-abbr { display: inline; }
+  .wear-full  { display: none; }
+}
+
+.prices-loading {
+  font-size: 13px;
+  color: var(--text);
+  opacity: 0.7;
+  align-self: center;
+}
+
+/* ── Price filter row ─────────────────────────────────────── */
+.price-filter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.price-range-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-h);
+  min-width: 48px;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-range-val:first-of-type { text-align: right; }
+
+/* ── Dual range slider ────────────────────────────────────── */
+.dual-range {
+  position: relative;
+  width: 220px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.dual-range-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.dual-range-fill {
+  position: absolute;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.dual-range-input {
+  position: absolute;
+  width: 100%;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+  outline: none;
+}
+
+.dual-range-input::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  cursor: pointer;
+  pointer-events: all;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  transition: transform 0.1s;
+}
+
+.dual-range-input::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.dual-range-input::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  cursor: pointer;
+  pointer-events: all;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  transition: transform 0.1s;
+}
+
+.dual-range-input::-moz-range-thumb:hover {
+  transform: scale(1.2);
 }
 
 .empty {
@@ -265,6 +500,7 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
+  flex: 1;
 }
 
 .item-name {
@@ -287,22 +523,64 @@
   gap: 5px;
 }
 
+.item-prices {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 6px;
+  flex-wrap: wrap;
+}
+
+.item-price-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+
+.item-price-logo {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.item-price-na {
+  color: var(--text);
+  opacity: 0.4;
+  font-weight: 400;
+}
+
 
 /* ── Steam login button ───────────────────────────────────── */
 .steam-login-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 28px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
   transition: opacity 0.2s, transform 0.15s;
+  letter-spacing: 0.2px;
 }
 
 .steam-login-btn:hover {
-  opacity: 0.85;
-  transform: translateY(-1px);
+  opacity: 0.88;
+  transform: translateY(-2px);
 }
 
-.steam-login-btn img {
-  display: block;
-  height: 50px;
-  width: auto;
+.steam-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 /* ── Modal ────────────────────────────────────────────────── */

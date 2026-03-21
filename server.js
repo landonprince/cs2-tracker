@@ -64,14 +64,20 @@ app.get('/api/inventory', async (req, res) => {
   if (!req.session.steamId) return res.status(401).json({ error: 'Not authenticated' })
   const qs = new URLSearchParams({ l: 'english', count: '2000' })
   if (req.query.start_assetid) qs.set('start_assetid', req.query.start_assetid)
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Referer': 'https://steamcommunity.com/',
+    'Accept': 'application/json',
+  }
   try {
-    const r = await fetch(`https://steamcommunity.com/inventory/${req.session.steamId}/730/2?${qs}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://steamcommunity.com/',
-        'Accept': 'application/json',
-      },
-    })
+    let r
+    for (let attempt = 0; attempt < 4; attempt++) {
+      if (attempt > 0) await new Promise(resolve => setTimeout(resolve, attempt * 2000))
+      r = await fetch(`https://steamcommunity.com/inventory/${req.session.steamId}/730/2?${qs}`, { headers })
+      if (r.status !== 429) break
+    }
+    if (r.status === 429) return res.status(429).json({ error: 'Steam is rate-limiting requests — please wait a moment and try again.' })
+    if (r.status === 403) return res.status(403).json({ error: 'Inventory is set to Private on Steam.' })
     if (!r.ok) return res.status(r.status).json({ error: `Steam returned ${r.status}` })
     res.json(await r.json())
   } catch (e) {
