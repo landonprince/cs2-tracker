@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   STEAM_IMAGE_BASE, RARITY_COLORS, RARITY_ORDER, RARITY_LABELS,
   getRarity, stripWear, getItemType, TYPE_ORDER,
@@ -26,14 +26,14 @@ function saveSnapshot(steamId, steam, csfloat) {
 const STEAM_COLOR   = 'var(--accent)'
 const CSFLOAT_COLOR = '#f59e0b'
 
+const W = 560, H = 160
+const PAD = { top: 12, right: 12, bottom: 26, left: 62 }
+const cW = W - PAD.left - PAD.right
+const cH = H - PAD.top - PAD.bottom
+
 // ── Dual line chart ─────────────────────────────────────────────
 function DualValueLineChart({ steamData, csfloatData }) {
   const [tooltip, setTooltip] = useState(null)
-
-  const W = 560, H = 160
-  const PAD = { top: 12, right: 12, bottom: 26, left: 62 }
-  const cW = W - PAD.left - PAD.right
-  const cH = H - PAD.top - PAD.bottom
 
   // Shared y scale across both series
   const allValues = [...steamData.map(d => d.value), ...csfloatData.map(d => d.value)]
@@ -41,16 +41,16 @@ function DualValueLineChart({ steamData, csfloatData }) {
   const maxV = Math.max(...allValues)
   const range = maxV - minV || 1
 
-  const toX = i => PAD.left + (i / Math.max(steamData.length - 1, 1)) * cW
-  const toY = v => PAD.top + cH - ((v - minV) / range) * cH
+  const toX = useCallback(i => PAD.left + (i / Math.max(steamData.length - 1, 1)) * cW, [steamData.length])
+  const toY = useCallback(v => PAD.top + cH - ((v - minV) / range) * cH, [minV, range])
 
-  const steamPts = steamData.map((d, i) => ({
+  const steamPts = useMemo(() => steamData.map((d, i) => ({
     x: toX(i),
     y: toY(d.value),
     steam: d.value,
     csfloat: csfloatData[i]?.value ?? null,
     date: new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-  }))
+  })), [steamData, csfloatData, toX, toY])
 
   const makeLine = pts => pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
   const makeArea = (pts, linePath) =>
@@ -74,7 +74,7 @@ function DualValueLineChart({ steamData, csfloatData }) {
     const svgX = ((e.clientX - rect.left) / rect.width) * W
     const idx = Math.max(0, Math.min(steamData.length - 1, Math.round(((svgX - PAD.left) / cW) * (steamData.length - 1))))
     setTooltip(steamPts[idx])
-  }, [steamPts, steamData.length, cW])
+  }, [steamPts, steamData.length])
 
   return (
     <div className="chart-wrap">
@@ -155,6 +155,7 @@ export default function Dashboard({ items, steamPrices, csfloatPrices, steamId, 
     if (!pricesLoaded || snapshotSaved.current || totalSteam === 0) return
     snapshotSaved.current = true
     const updated = saveSnapshot(steamId, totalSteam, totalCsfloat)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHistory(updated)
   }, [pricesLoaded, totalSteam, totalCsfloat, steamId])
 

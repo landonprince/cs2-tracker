@@ -1,8 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl -sv \"https://steamcommunity.com/inventory/76561198110930554/730/2?count=5000\" -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36\" -H \"Referer: https://steamcommunity.com/\" --compressed)",
-      "Bash(curl -sv \"https://steamcommunity.com/inventory/76561198110930554/730/2\" --compressed)"
+      "Bash(npm run:*)"
     ]
   }
 }
