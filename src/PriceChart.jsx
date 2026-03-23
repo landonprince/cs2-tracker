@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { stripWear, getWear } from './constants'
 
 const STEAM_IMAGE_BASE = 'https://community.akamai.steamstatic.com/economy/image/'
 
@@ -17,14 +18,22 @@ function filterLastMonth(data) {
   })
 }
 
+function filterLastWeek(data) {
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000
+  return data.filter(([dateStr]) => {
+    const cleaned = dateStr.replace(/ \d+: \+0$/, '')
+    return new Date(cleaned).getTime() >= cutoff
+  })
+}
+
 function formatSteamDate(dateStr) {
   const d = new Date(dateStr.replace(/ \d+: \+0$/, ''))
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 // ── CSFloat helpers ───────────────────────────────────────────
-function aggregateCSFloatByDay(sales) {
-  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000
+function aggregateCSFloatByDay(sales, days = 30) {
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
   const byDay = {}
   for (const sale of sales) {
     if (new Date(sale.sold_at).getTime() < cutoff) continue
@@ -41,8 +50,8 @@ function aggregateCSFloatByDay(sales) {
     ])
 }
 
-function computeCSFloatStats(sales) {
-  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000
+function computeCSFloatStats(sales, days = 30) {
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
   const recent = sales.filter(s => new Date(s.sold_at).getTime() >= cutoff)
   if (recent.length === 0) return null
 
@@ -58,7 +67,28 @@ function computeCSFloatStats(sales) {
     ? (prices[mid - 1] + prices[mid]) / 2
     : prices[mid]
 
-  return { lastPrice, median, soldToday }
+  const high = prices[prices.length - 1]
+  const low = prices[0]
+
+  // unique days with sales
+  const days30 = new Set(recent.map(s => s.sold_at.slice(0, 10))).size
+  const avgDailyVol = days30 > 0 ? (recent.length / days30).toFixed(1) : null
+
+  return { lastPrice, median, soldToday, count: recent.length, high, low, avgDailyVol }
+}
+
+function computeSteamStats(data) {
+  if (!data || data.length < 2) return null
+  const prices = data.map(d => parseFloat(d[1]))
+  const vols = data.map(d => parseFloat(d[2]) || 0)
+  const high = Math.max(...prices)
+  const low = Math.min(...prices)
+  const first = prices[0]
+  const last = prices[prices.length - 1]
+  const changePct = first > 0 ? ((last - first) / first) * 100 : null
+  const totalVol = vols.reduce((s, v) => s + v, 0)
+  const avgDailyVol = data.length > 0 ? (totalVol / data.length).toFixed(0) : null
+  return { high, low, changePct, avgDailyVol }
 }
 
 function formatISODate(dateStr) {
@@ -170,13 +200,20 @@ function PriceLineChart({ data, color, gradId, formatDateFn }) {
 
 // ── Modal ─────────────────────────────────────────────────────
 export default function PriceModal({ item, onClose }) {
-  const [steamData, setSteamData] = useState(null)
-  const [csfloatData, setCSFloatData] = useState(null)
+  const [rawSteamData, setRawSteamData] = useState(null)
+  const [steamWindow, setSteamWindow] = useState('30d')
+  const [rawCsfloatSales, setRawCsfloatSales] = useState(null)
   const [currentPrice, setCurrentPrice] = useState(null)
-  const [csfloatStats, setCSFloatStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [csfloatError, setCSFloatError] = useState(null)
+  const [csfloatError, setCsfloatError] = useState(null)
+
+  const steamData    = rawSteamData
+    ? (steamWindow === '7d' ? filterLastWeek(rawSteamData) : filterLastMonth(rawSteamData))
+    : null
+  const steamStats   = computeSteamStats(steamData)
+  const csfloatData  = rawCsfloatSales ? aggregateCSFloatByDay(rawCsfloatSales) : null
+  const csfloatStats = rawCsfloatSales ? computeCSFloatStats(rawCsfloatSales) : null
 
   useEffect(() => {
     const name = encodeURIComponent(item.market_hash_name)
@@ -195,16 +232,12 @@ export default function PriceModal({ item, onClose }) {
       if (!raw || raw.length === 0) throw new Error('No price history available for this item')
       const filtered = filterLastMonth(raw)
       if (filtered.length < 2) throw new Error('Not enough data for the past 30 days')
-      setSteamData(filtered)
+      setRawSteamData(raw)
 
       if (Array.isArray(csfloatSales) && csfloatSales.length > 0) {
-        const stats = computeCSFloatStats(csfloatSales)
-        if (stats) setCSFloatStats(stats)
-        const aggregated = aggregateCSFloatByDay(csfloatSales)
-        if (aggregated.length >= 2) setCSFloatData(aggregated)
-        else setCSFloatError('Not enough CSFloat sales in the past 30 days')
+        setRawCsfloatSales(csfloatSales)
       } else {
-        setCSFloatError('No CSFloat sales data available for this item')
+        setCsfloatError('No CSFloat sales data available for this item')
       }
     }).catch(e => setError(e.message)).finally(() => setLoading(false))
   }, [item.market_hash_name])
@@ -223,7 +256,8 @@ export default function PriceModal({ item, onClose }) {
         <div className="modal-header">
           <img src={`${STEAM_IMAGE_BASE}${item.icon_url}`} alt={item.name} className="modal-icon" />
           <div className="modal-title">
-            <h2>{item.market_hash_name || item.name}</h2>
+            <h2>{stripWear(item.market_hash_name || item.name)}</h2>
+            {getWear(item) && <span className="item-wear">{getWear(item)}</span>}
           </div>
         </div>
 
@@ -236,10 +270,15 @@ export default function PriceModal({ item, onClose }) {
           )}
           {error && <p className="error modal-error">{error}</p>}
 
-          {steamData && (
+          {rawSteamData && (
             <>
               <div className="chart-header">
-                <p className="chart-label">Steam Community Market — 30-Day Price (USD)</p>
+                <p className="chart-label">
+                  <svg className="chart-label-logo" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.187.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.455 1.012zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.252 0-2.265-1.014-2.265-2.265z"/>
+                  </svg>
+                  Steam Community Market <span className="chart-label-currency">USD</span>
+                </p>
                 {currentPrice && (
                   <div className="modal-prices">
                     <span className="price-main">{currentPrice.lowest_price}</span>
@@ -254,13 +293,47 @@ export default function PriceModal({ item, onClose }) {
                 gradId="steamGrad"
                 formatDateFn={formatSteamDate}
               />
+              <div className="chart-window-btns">
+                {['7d', '30d'].map(w => (
+                  <button
+                    key={w}
+                    className={`chart-window-btn ${steamWindow === w ? 'active' : ''}`}
+                    onClick={() => setSteamWindow(w)}
+                  >{w.toUpperCase()}</button>
+                ))}
+              </div>
+              {steamStats && (
+                <div className="item-stats-row">
+                  <div className="item-stat">
+                    <span className="item-stat-label">High</span>
+                    <span className="item-stat-value">${steamStats.high.toFixed(2)}</span>
+                  </div>
+                  <div className="item-stat">
+                    <span className="item-stat-label">Low</span>
+                    <span className="item-stat-value">${steamStats.low.toFixed(2)}</span>
+                  </div>
+                  <div className="item-stat">
+                    <span className="item-stat-label">Change</span>
+                    <span className={`item-stat-value ${steamStats.changePct == null ? '' : steamStats.changePct >= 0 ? 'stat-up' : 'stat-down'}`}>
+                      {steamStats.changePct == null ? '—' : `${steamStats.changePct >= 0 ? '+' : ''}${steamStats.changePct.toFixed(1)}%`}
+                    </span>
+                  </div>
+                  <div className="item-stat">
+                    <span className="item-stat-label">Avg Daily Vol</span>
+                    <span className="item-stat-value">{steamStats.avgDailyVol ?? '—'}</span>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
-          {steamData && (
+          {rawSteamData && (
             <>
               <div className="chart-header chart-header-second">
-                <p className="chart-label">CSFloat Marketplace — 30-Day Price (USD)</p>
+                <p className="chart-label">
+                  <img className="chart-label-logo" src="https://csfloat.com/favicon.ico" alt="CSFloat" />
+                  CSFloat Market <span className="chart-label-currency">USD</span>
+                </p>
                 {csfloatStats && (
                   <div className="modal-prices">
                     <span className="price-main">${csfloatStats.lastPrice.toFixed(2)}</span>
@@ -269,15 +342,35 @@ export default function PriceModal({ item, onClose }) {
                   </div>
                 )}
               </div>
-              {csfloatData
+              {csfloatData && csfloatData.length >= 2
                 ? <PriceLineChart
                     data={csfloatData}
                     color="#0078D0"
                     gradId="csfloatGrad"
                     formatDateFn={formatISODate}
                   />
-                : <p className="chart-unavailable">{csfloatError}</p>
+                : <p className="chart-unavailable">{csfloatError ?? 'Not enough recent CSFloat sales'}</p>
               }
+              {csfloatStats && (
+                <div className="item-stats-row">
+                  <div className="item-stat">
+                    <span className="item-stat-label">30D Sales</span>
+                    <span className="item-stat-value">{csfloatStats.count}</span>
+                  </div>
+                  <div className="item-stat">
+                    <span className="item-stat-label">High</span>
+                    <span className="item-stat-value">${csfloatStats.high.toFixed(2)}</span>
+                  </div>
+                  <div className="item-stat">
+                    <span className="item-stat-label">Low</span>
+                    <span className="item-stat-value">${csfloatStats.low.toFixed(2)}</span>
+                  </div>
+                  <div className="item-stat">
+                    <span className="item-stat-label">Avg Daily Vol</span>
+                    <span className="item-stat-value">{csfloatStats.avgDailyVol ?? '—'}</span>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -289,7 +382,19 @@ export default function PriceModal({ item, onClose }) {
             rel="noopener noreferrer"
             className="btn-outline"
           >
+            <svg className="btn-logo" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.187.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.455 1.012zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.252 0-2.265-1.014-2.265-2.265z"/>
+            </svg>
             View on Steam Market ↗
+          </a>
+          <a
+            href={`https://csfloat.com/search?market_hash_name=${encodeURIComponent(item.market_hash_name)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-outline"
+          >
+            <img className="btn-logo" src="https://csfloat.com/favicon.ico" alt="" />
+            View on CSFloat Market ↗
           </a>
         </div>
       </div>

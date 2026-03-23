@@ -8,6 +8,53 @@ import {
   WEAR_ORDER, WEAR_LABELS, TYPE_ORDER, getRarity, getWear, getItemType, stripWear,
 } from './constants'
 
+function parseLineData(html) {
+  const match = html.match(/var line1\s*=\s*(\[[\s\S]*?\]);/)
+  if (!match) return null
+  try { return JSON.parse(match[1]) } catch { return null }
+}
+
+function filterAndAggregateWeek(data) {
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000
+  const byDay = {}
+  for (const [dateStr, price] of data) {
+    const cleaned = dateStr.replace(/ \d+: \+0$/, '')
+    if (new Date(cleaned).getTime() < cutoff) continue
+    const day = cleaned.slice(0, 6) // e.g. "Jun 01"
+    if (!byDay[day]) byDay[day] = []
+    byDay[day].push(price)
+  }
+  return Object.values(byDay).map(prices => prices.reduce((s, p) => s + p, 0) / prices.length)
+}
+
+function Sparkline({ data }) {
+  if (!data || data.length < 2) return null
+  const prices = data
+  const minP = Math.min(...prices)
+  const maxP = Math.max(...prices)
+  const range = maxP - minP || 1
+  const W = 100, H = 36, pad = 3
+  const pts = prices.map((p, i) => ({
+    x: (i / (prices.length - 1)) * W,
+    y: H - pad - ((p - minP) / range) * (H - pad * 2),
+  }))
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
+  const areaPath = `${linePath} L${pts.at(-1).x},${H} L${pts[0].x},${H}Z`
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="card-sparkline" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="spark-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill="url(#spark-grad)" />
+      <path d={linePath} fill="none" stroke="var(--accent)" strokeWidth="1.5"
+        strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function parsePrice(str) {
   if (!str) return null
   const n = parseFloat(str.replace(/[^0-9.]/g, ''))
@@ -92,8 +139,10 @@ export default function App() {
     setMinInput(priceRange[0] <= sliderBounds[0] ? '' : String(priceRange[0]))
     setMaxInput(priceRange[1] >= sliderBounds[1] ? '' : String(priceRange[1]))
   }, [priceRange, sliderBounds])
-  const pricesFetched    = useRef({ steam: false, csfloat: false })
-  const loadingCountRef  = useRef(0)
+  const [sparklines, setSparklines] = useState({})
+  const pricesFetched      = useRef({ steam: false, csfloat: false })
+  const sparklinesFetched  = useRef(false)
+  const loadingCountRef    = useRef(0)
 
 
   useEffect(() => {
@@ -129,10 +178,36 @@ export default function App() {
     }
   }, [steamId])
 
+  // Fetch sparkline data for all items after prices load
+  useEffect(() => {
+    if (pricesLoading || Object.keys(steamPrices).length === 0 || sparklinesFetched.current) return
+    sparklinesFetched.current = true
+    const uniqueNames = [...new Set(items.map(i => i.market_hash_name).filter(Boolean))]
+    const timer = setTimeout(() => {
+      fetchInBatches(uniqueNames, async name => {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (attempt > 0) await new Promise(r => setTimeout(r, 2000))
+          try {
+            const r = await fetch(`/steam-market/listings/730/${encodeURIComponent(name)}`)
+            if (r.status === 429) continue
+            const html = await r.text()
+            const raw = parseLineData(html)
+            if (!raw || raw.length < 2) return null
+            const daily = filterAndAggregateWeek(raw)
+            return daily.length >= 2 ? daily : null
+          } catch { return null }
+        }
+        return null
+      }, 3, 1000).then(setSparklines)
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [pricesLoading, steamPrices, items])
+
   // Save item price snapshot once prices finish loading
   const priceSavedRef = useRef(false)
   useEffect(() => {
-    if (pricesLoading || priceSavedRef.current || !steamId || Object.keys(steamPrices).length === 0) return
+    if (pricesLoading || priceSavedRef.current || !steamId ||
+        Object.keys(steamPrices).length === 0 || Object.keys(csfloatPrices).length === 0) return
     priceSavedRef.current = true
     savePriceSnapshot(steamId, steamPrices, csfloatPrices)
   }, [pricesLoading, steamId, steamPrices, csfloatPrices])
@@ -272,13 +347,25 @@ export default function App() {
     else if (sortBy === 'name-desc')
       result.sort((a, b) => (b.market_hash_name || b.name).localeCompare(a.market_hash_name || a.name))
     else if (sortBy === 'rarity-asc')
-      result.sort((a, b) => RARITY_ORDER.indexOf(getRarity(a)) - RARITY_ORDER.indexOf(getRarity(b)))
+      result.sort((a, b) => {
+        const ia = RARITY_ORDER.indexOf(getRarity(a)), ib = RARITY_ORDER.indexOf(getRarity(b))
+        return (ia === -1 ? Infinity : ia) - (ib === -1 ? Infinity : ib)
+      })
     else if (sortBy === 'rarity-desc')
-      result.sort((a, b) => RARITY_ORDER.indexOf(getRarity(b)) - RARITY_ORDER.indexOf(getRarity(a)))
+      result.sort((a, b) => {
+        const ia = RARITY_ORDER.indexOf(getRarity(a)), ib = RARITY_ORDER.indexOf(getRarity(b))
+        return (ib === -1 ? Infinity : ib) - (ia === -1 ? Infinity : ia)
+      })
     else if (sortBy === 'wear-asc')
-      result.sort((a, b) => WEAR_ORDER.indexOf(getWear(a)) - WEAR_ORDER.indexOf(getWear(b)))
+      result.sort((a, b) => {
+        const ia = WEAR_ORDER.indexOf(getWear(a)), ib = WEAR_ORDER.indexOf(getWear(b))
+        return (ia === -1 ? Infinity : ia) - (ib === -1 ? Infinity : ib)
+      })
     else if (sortBy === 'wear-desc')
-      result.sort((a, b) => WEAR_ORDER.indexOf(getWear(b)) - WEAR_ORDER.indexOf(getWear(a)))
+      result.sort((a, b) => {
+        const ia = WEAR_ORDER.indexOf(getWear(a)), ib = WEAR_ORDER.indexOf(getWear(b))
+        return (ib === -1 ? Infinity : ib) - (ia === -1 ? Infinity : ia)
+      })
     else if (sortBy === 'steam-price-desc')
       result.sort((a, b) => {
         const pa = steamPrices[a.market_hash_name], pb = steamPrices[b.market_hash_name]
@@ -571,6 +658,7 @@ export default function App() {
                       )
                     })()}
                   </div>
+                  <Sparkline data={sparklines[item.market_hash_name]} />
                 </div>
               )
             })}
