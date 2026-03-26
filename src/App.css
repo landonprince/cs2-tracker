@@ -1720,13 +1720,15 @@
 
 .item-price-pct {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  margin-left: 2px;
+  margin-left: 4px;
+  padding: 0 7px 1px;
+  border-radius: 20px;
 }
 
-.pct-up   { color: #22c55e; }
-.pct-down { color: #ef4444; }
+.pct-up   { color: #22c55e; background: rgba(34, 197, 94, 0.15); }
+.pct-down { color: #ef4444; background: rgba(239, 68, 68, 0.15); }
 
 
 /* ── Steam login button ───────────────────────────────────── */

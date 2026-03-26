@@ -1,12 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 export default function SettingsPage({ steamId, onBack, onClearAlerts }) {
-  const [notifPermission, setNotifPermission] = useState(Notification.permission)
+  const [notifPermission, setNotifPermission] = useState(() => Notification.permission)
   const [cleared, setCleared] = useState({})
-
-  useEffect(() => {
-    setNotifPermission(Notification.permission)
-  }, [])
 
   function flash(key) {
     setCleared(prev => ({ ...prev, [key]: true }))

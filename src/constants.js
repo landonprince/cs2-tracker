@@ -68,6 +68,15 @@ export function stripWear(name = '') {
   return name.replace(/ \((Factory New|Minimal Wear|Field-Tested|Well-Worn|Battle-Scarred)\)$/, '')
 }
 
+export function countByRarity(items) {
+  const counts = {}
+  for (const item of items) {
+    const r = getRarity(item)
+    if (r) counts[r] = (counts[r] ?? 0) + 1
+  }
+  return counts
+}
+
 export function parseLineData(html) {
   const match = html.match(/var line1\s*=\s*(\[[\s\S]*?\]);/)
   if (!match) return null

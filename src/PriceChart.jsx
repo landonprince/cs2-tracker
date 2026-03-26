@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { stripWear, getWear, parseLineData, formatSteamDate } from './constants'
-
-const STEAM_IMAGE_BASE = 'https://community.akamai.steamstatic.com/economy/image/'
+import { STEAM_IMAGE_BASE, stripWear, getWear, parseLineData, formatSteamDate } from './constants'
 
 // ── Steam helpers ─────────────────────────────────────────────
 
@@ -92,14 +90,20 @@ function formatISODate(dateStr) {
 }
 
 // ── Shared SVG chart ──────────────────────────────────────────
+const CHART_W = 580
+const CHART_H = 200
+const CHART_PAD = { top: 16, right: 16, bottom: 36, left: 56 }
+const CHART_CW = CHART_W - CHART_PAD.left - CHART_PAD.right
+const CHART_CH = CHART_H - CHART_PAD.top - CHART_PAD.bottom
+
 function PriceLineChart({ data, color, gradId, formatDateFn }) {
   const [tooltip, setTooltip] = useState(null)
 
-  const W = 580
-  const H = 200
-  const PAD = { top: 16, right: 16, bottom: 36, left: 56 }
-  const cW = W - PAD.left - PAD.right
-  const cH = H - PAD.top - PAD.bottom
+  const W = CHART_W
+  const H = CHART_H
+  const PAD = CHART_PAD
+  const cW = CHART_CW
+  const cH = CHART_CH
 
   const prices = data.map(d => parseFloat(d[1]))
   const minP = Math.min(...prices)
@@ -130,10 +134,10 @@ function PriceLineChart({ data, color, gradId, formatDateFn }) {
 
   const handleMouseMove = useCallback((e) => {
     const rect = e.currentTarget.getBoundingClientRect()
-    const svgX = ((e.clientX - rect.left) / rect.width) * W
-    const idx = Math.round(((svgX - PAD.left) / cW) * (data.length - 1))
+    const svgX = ((e.clientX - rect.left) / rect.width) * CHART_W
+    const idx = Math.round(((svgX - CHART_PAD.left) / CHART_CW) * (data.length - 1))
     setTooltip(points[Math.max(0, Math.min(data.length - 1, idx))])
-  }, [points, data.length, cW])
+  }, [points, data.length])
 
   return (
     <div className="chart-wrap">

@@ -41,7 +41,7 @@ Both `dev` and `server` must be running simultaneously during development.
 
 **Inventory pagination**: `fetchInventory` in `App.jsx` loops through Steam's inventory API using `start_assetid` cursor until all pages are fetched. Items and descriptions are merged client-side.
 
-**Sparklines**: Per-item 7-day SVG mini-charts on inventory cards. Fetched in batches (3 at a time, 1 s delay) from `/steam-market/listings/730/{name}` after prices finish loading. Uses `parseLineData` from `constants.js` to extract `var line1` from the HTML, then `filterAndAggregateWeek` (defined in `App.jsx`) to downsample to daily averages. The `Sparkline` component is also defined inline in `App.jsx`.
+**Sparklines**: Per-item 7-day SVG mini-charts on inventory cards. Fetched in batches (5 at a time, 400ms gap, 500ms start delay) from `/steam-market/listings/730/{name}` after prices finish loading. Uses `parseLineData` from `constants.js` to extract `var line1` from the HTML, then `filterAndAggregateWeek` (defined in `App.jsx`) to downsample to daily averages. The `Sparkline` component is also defined inline in `App.jsx`.
 
 **Price alerts**: Stored per-item rules checked on every Steam price update in `App.jsx`. Triggers browser `Notification` API when price crosses the threshold. Triggered alerts are marked and preserved (not removed) so the user can see what fired.
 

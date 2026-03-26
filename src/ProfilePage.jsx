@@ -1,6 +1,6 @@
 import {
   STEAM_IMAGE_BASE, RARITY_COLORS, RARITY_ORDER, RARITY_LABELS,
-  getRarity, stripWear,
+  stripWear, countByRarity,
 } from './constants'
 
 export default function ProfilePage({ items, steamPrices, csfloatPrices, steamId, profile, onLogout, onSettings }) {
@@ -16,11 +16,7 @@ export default function ProfilePage({ items, steamPrices, csfloatPrices, steamId
     return (!best || price > steamPrices[best.market_hash_name]) ? item : best
   }, null)
 
-  const rarityCounts = {}
-  for (const item of items) {
-    const r = getRarity(item)
-    if (r) rarityCounts[r] = (rarityCounts[r] ?? 0) + 1
-  }
+  const rarityCounts = countByRarity(items)
 
   const pricesLoaded = Object.keys(steamPrices).length > 0
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   STEAM_IMAGE_BASE, RARITY_COLORS, RARITY_ORDER, RARITY_LABELS,
-  getRarity, stripWear, getItemType, TYPE_ORDER,
+  getRarity, stripWear, getItemType, TYPE_ORDER, countByRarity,
 } from './constants'
 
 function historyKey(steamId) { return `csassets-history-${steamId}` }
@@ -142,7 +142,7 @@ function DualValueLineChart({ steamData, csfloatData }) {
 }
 
 // ── Dashboard ──────────────────────────────────────────────────
-export default function Dashboard({ items, steamPrices, csfloatPrices, steamId, profile, onNavigate, onRefresh }) {
+export default function Dashboard({ items, steamPrices, csfloatPrices, steamId, profile, onNavigate }) {
   const [history, setHistory]   = useState(() => loadHistory(steamId))
   const snapshotSaved           = useRef(false)
 
@@ -164,11 +164,7 @@ export default function Dashboard({ items, steamPrices, csfloatPrices, steamId, 
     .sort((a, b) => steamPrices[b.market_hash_name] - steamPrices[a.market_hash_name])
     .slice(0, 5)
 
-  const rarityCounts = {}
-  for (const item of items) {
-    const r = getRarity(item)
-    if (r) rarityCounts[r] = (rarityCounts[r] ?? 0) + 1
-  }
+  const rarityCounts = countByRarity(items)
 
   const steamHistory   = history.map(h => ({ date: h.date, value: h.steam }))
   const csfloatHistory = history.map(h => ({ date: h.date, value: h.csfloat }))

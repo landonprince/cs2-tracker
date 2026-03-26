@@ -168,6 +168,84 @@ function CardAlertModal({ item, onClose, onAddAlert }) {
   )
 }
 
+let logoIdCounter = 0
+function Logo() {
+  const [maskId] = useState(() => `logo-mask-${++logoIdCounter}`)
+  return (
+    <>
+      <svg width="26" height="28" viewBox="0 0 26 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <mask id={maskId}>
+            <rect width="26" height="28" fill="white"/>
+            <polyline points="-4,21 8.5,12 13.5,15 30,6" stroke="black" strokeWidth="3.25" strokeLinecap="butt" strokeLinejoin="miter"/>
+          </mask>
+        </defs>
+        <path d="M13 1.5 L24 5.5 L24 15 C24 21 19 25.5 13 27 C7 25.5 2 21 2 15 L2 5.5 Z" fill="var(--accent)" mask={`url(#${maskId})`}/>
+      </svg>
+      <h1 style={{fontWeight:700, margin:0}}>CS<span style={{color:'var(--accent)'}}>Assets</span></h1>
+    </>
+  )
+}
+
+function LandingVisual() {
+  return (
+    <div className="landing-visual-wrap">
+      <span className="lv-sparkle"               style={{top: '6%',    left: '-16%'}} />
+      <span className="lv-sparkle lv-sparkle--sm" style={{top: '28%',  right: '-12%'}} />
+      <span className="lv-sparkle lv-sparkle--lg" style={{bottom: '24%', left: '-20%'}} />
+      <span className="lv-sparkle lv-sparkle--sm" style={{top: '-6%',  right: '-10%'}} />
+      <span className="lv-sparkle"               style={{bottom: '6%',  right: '-14%'}} />
+      <div className="landing-visual">
+        <div className="lv-chart-card">
+          <div className="lv-chart-header">
+            <span className="lv-chart-label">Portfolio Value</span>
+            <span className="lv-badge-up">+18.3%</span>
+          </div>
+          <div className="lv-chart-value">$2,847<span className="lv-chart-cents">.32</span></div>
+          <svg viewBox="0 0 280 80" className="lv-svg" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="lv-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.28"/>
+                <stop offset="100%" stopColor="var(--accent)" stopOpacity="0"/>
+              </linearGradient>
+            </defs>
+            <path className="lv-area" d="M0,68 L30,60 L55,65 L80,52 L110,56 L135,43 L158,48 L180,37 L205,42 L228,28 L252,32 L280,18 L280,80 L0,80 Z"/>
+            <path className="lv-line" d="M0,68 L30,60 L55,65 L80,52 L110,56 L135,43 L158,48 L180,37 L205,42 L228,28 L252,32 L280,18"/>
+          </svg>
+        </div>
+        <div className="lv-items">
+          <div className="lv-item-card" style={{'--rarity': '#d32ce6'}}>
+            <div className="lv-item-img-wrap">
+              <img className="lv-item-img" src="https://community.akamai.steamstatic.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyLwlcK3wiFO0POlPPNSMuWRDGKC_uJ_t-l9AXCxxEh14zjTztivci2ePQZ2W8NzTecD4BKwloLiYeqxtAOIj9gUyyngznQeF7I6QE8" alt="AK-47 | Vulcan" />
+            </div>
+            <div className="lv-item-info">
+              <span className="lv-item-name">AK-47 | Vulcan</span>
+              <span className="lv-item-wear">Minimal Wear</span>
+            </div>
+            <div className="lv-item-prices">
+              <span className="lv-item-price">$419.62</span>
+              <span className="lv-badge-up">+28.7%</span>
+            </div>
+          </div>
+          <div className="lv-item-card" style={{'--rarity': '#d32ce6'}}>
+            <div className="lv-item-img-wrap">
+              <img className="lv-item-img" src="https://community.akamai.steamstatic.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyL2kpnj9h1Y-s2pZKtuK8-WF2KTzuBiseJ9cCW6khUz_T-GyNavdCqRawN1CMFwTOcO5hO7loXiY-zmsQKPi44QzHj22ikcvy11o7FVfFOBmfY" alt="Glock-18 | Vogue" />
+            </div>
+            <div className="lv-item-info">
+              <span className="lv-item-name">Glock-18 | Vogue</span>
+              <span className="lv-item-wear">Factory New</span>
+            </div>
+            <div className="lv-item-prices">
+              <span className="lv-item-price">$18.65</span>
+              <span className="lv-badge-up">+27.9%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function DualRangeSlider({ lo, hi, min, max, onChange }) {
   const pct = v => max > min ? ((v - min) / (max - min)) * 100 : 0
   const loPct = pct(lo)
@@ -232,6 +310,7 @@ export default function App() {
         else setLoading(false)
       })
       .catch(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -265,27 +344,31 @@ export default function App() {
 
   // Check alerts whenever steam prices update
   useEffect(() => {
-    if (Object.keys(steamPrices).length === 0 || alerts.length === 0) return
-    let anyTriggered = false
-    const updated = alerts.map(alert => {
-      if (alert.triggered) return alert
-      const price = steamPrices[alert.market_hash_name]
-      if (price == null) return alert
-      const hit = alert.direction === 'above' ? price >= alert.targetPrice : price <= alert.targetPrice
-      if (!hit) return alert
-      anyTriggered = true
-      if (Notification.permission === 'granted') {
-        new Notification('CSAssets Price Alert', {
-          body: `${stripWear(alert.market_hash_name)} is now $${price.toFixed(2)} (target: ${alert.direction === 'above' ? '≥' : '≤'} $${alert.targetPrice.toFixed(2)})`,
-        })
+    if (Object.keys(steamPrices).length === 0) return
+    setAlerts(prev => {
+      if (prev.length === 0) return prev
+      let anyTriggered = false
+      const updated = prev.map(alert => {
+        if (alert.triggered) return alert
+        const price = steamPrices[alert.market_hash_name]
+        if (price == null) return alert
+        const hit = alert.direction === 'above' ? price >= alert.targetPrice : price <= alert.targetPrice
+        if (!hit) return alert
+        anyTriggered = true
+        if (Notification.permission === 'granted') {
+          new Notification('CSAssets Price Alert', {
+            body: `${stripWear(alert.market_hash_name)} is now $${price.toFixed(2)} (target: ${alert.direction === 'above' ? '≥' : '≤'} $${alert.targetPrice.toFixed(2)})`,
+          })
+        }
+        return { ...alert, triggered: true, triggeredPrice: price, triggeredAt: new Date().toISOString() }
+      })
+      if (anyTriggered) {
+        saveAlerts(steamId, updated)
+        return updated
       }
-      return { ...alert, triggered: true, triggeredPrice: price, triggeredAt: new Date().toISOString() }
+      return prev
     })
-    if (anyTriggered) {
-      setAlerts(updated)
-      saveAlerts(steamId, updated)
-    }
-  }, [steamPrices, alerts, steamId])
+  }, [steamPrices, steamId])
 
   // Fetch sparkline data for all items after prices load
   useEffect(() => {
@@ -478,75 +561,46 @@ export default function App() {
       })
     }
 
-    if (sortBy === 'name-asc')
-      result.sort((a, b) => (a.market_hash_name || a.name).localeCompare(b.market_hash_name || b.name))
-    else if (sortBy === 'name-desc')
-      result.sort((a, b) => (b.market_hash_name || b.name).localeCompare(a.market_hash_name || a.name))
-    else if (sortBy === 'rarity-asc')
-      result.sort((a, b) => {
-        const ia = RARITY_ORDER.indexOf(getRarity(a)), ib = RARITY_ORDER.indexOf(getRarity(b))
-        return (ia === -1 ? Infinity : ia) - (ib === -1 ? Infinity : ib)
-      })
-    else if (sortBy === 'rarity-desc')
-      result.sort((a, b) => {
-        const ia = RARITY_ORDER.indexOf(getRarity(a)), ib = RARITY_ORDER.indexOf(getRarity(b))
-        return (ib === -1 ? Infinity : ib) - (ia === -1 ? Infinity : ia)
-      })
-    else if (sortBy === 'wear-asc')
-      result.sort((a, b) => {
-        const ia = WEAR_ORDER.indexOf(getWear(a)), ib = WEAR_ORDER.indexOf(getWear(b))
-        return (ia === -1 ? Infinity : ia) - (ib === -1 ? Infinity : ib)
-      })
-    else if (sortBy === 'wear-desc')
-      result.sort((a, b) => {
-        const ia = WEAR_ORDER.indexOf(getWear(a)), ib = WEAR_ORDER.indexOf(getWear(b))
-        return (ib === -1 ? Infinity : ib) - (ia === -1 ? Infinity : ia)
-      })
-    else if (sortBy === 'steam-price-desc')
-      result.sort((a, b) => {
-        const pa = steamPrices[a.market_hash_name], pb = steamPrices[b.market_hash_name]
-        if (pa == null && pb == null) return 0
-        if (pa == null) return 1
-        if (pb == null) return -1
-        return pb - pa
-      })
-    else if (sortBy === 'steam-price-asc')
-      result.sort((a, b) => {
-        const pa = steamPrices[a.market_hash_name], pb = steamPrices[b.market_hash_name]
-        if (pa == null && pb == null) return 0
-        if (pa == null) return 1
-        if (pb == null) return -1
-        return pa - pb
-      })
-    else if (sortBy === 'csfloat-price-desc')
-      result.sort((a, b) => {
-        const pa = csfloatPrices[a.market_hash_name], pb = csfloatPrices[b.market_hash_name]
-        if (pa == null && pb == null) return 0
-        if (pa == null) return 1
-        if (pb == null) return -1
-        return pb - pa
-      })
-    else if (sortBy === 'csfloat-price-asc')
-      result.sort((a, b) => {
-        const pa = csfloatPrices[a.market_hash_name], pb = csfloatPrices[b.market_hash_name]
-        if (pa == null && pb == null) return 0
-        if (pa == null) return 1
-        if (pb == null) return -1
-        return pa - pb
-      })
-
-    else if (sortBy === 'pct-desc' || sortBy === 'pct-asc') {
-      result.sort((a, b) => {
-        const spa = steamPrices[a.market_hash_name], psa = prevSteamPrices[a.market_hash_name]
-        const spb = steamPrices[b.market_hash_name], psb = prevSteamPrices[b.market_hash_name]
-        const pctA = spa != null && psa != null && psa !== 0 ? (spa - psa) / psa : null
-        const pctB = spb != null && psb != null && psb !== 0 ? (spb - psb) / psb : null
-        if (pctA == null && pctB == null) return 0
-        if (pctA == null) return 1
-        if (pctB == null) return -1
-        return sortBy === 'pct-desc' ? pctB - pctA : pctA - pctB
-      })
+    const orderBy = (arr, getter) => (a, b) => {
+      const ia = arr.indexOf(getter(a)), ib = arr.indexOf(getter(b))
+      return (ia === -1 ? Infinity : ia) - (ib === -1 ? Infinity : ib)
     }
+    const byPrice = (prices, dir) => (a, b) => {
+      const pa = prices[a.market_hash_name], pb = prices[b.market_hash_name]
+      if (pa == null && pb == null) return 0
+      if (pa == null) return 1
+      if (pb == null) return -1
+      return dir === 'desc' ? pb - pa : pa - pb
+    }
+    const pctChange = (item) => {
+      const sp = steamPrices[item.market_hash_name], ps = prevSteamPrices[item.market_hash_name]
+      return sp != null && ps != null && ps !== 0 ? (sp - ps) / ps : null
+    }
+    const byPct = (dir) => (a, b) => {
+      const pctA = pctChange(a), pctB = pctChange(b)
+      if (pctA == null && pctB == null) return 0
+      if (pctA == null) return 1
+      if (pctB == null) return -1
+      return dir === 'desc' ? pctB - pctA : pctA - pctB
+    }
+
+    const comparators = {
+      'name-asc':           (a, b) => (a.market_hash_name || a.name).localeCompare(b.market_hash_name || b.name),
+      'name-desc':          (a, b) => (b.market_hash_name || b.name).localeCompare(a.market_hash_name || a.name),
+      'rarity-asc':         orderBy(RARITY_ORDER, getRarity),
+      'rarity-desc':        (a, b) => -orderBy(RARITY_ORDER, getRarity)(a, b),
+      'wear-asc':           orderBy(WEAR_ORDER, getWear),
+      'wear-desc':          (a, b) => -orderBy(WEAR_ORDER, getWear)(a, b),
+      'steam-price-desc':   byPrice(steamPrices, 'desc'),
+      'steam-price-asc':    byPrice(steamPrices, 'asc'),
+      'csfloat-price-desc': byPrice(csfloatPrices, 'desc'),
+      'csfloat-price-asc':  byPrice(csfloatPrices, 'asc'),
+      'pct-desc':           byPct('desc'),
+      'pct-asc':            byPct('asc'),
+    }
+
+    const comparator = comparators[sortBy]
+    if (comparator) result.sort(comparator)
 
     return result
   }, [items, sortBy, searchQuery, filterType, filterRarity, filterWear, steamPrices, csfloatPrices, prevSteamPrices, priceRange, sliderBounds])
@@ -565,16 +619,7 @@ export default function App() {
       <div className="inventory-page">
         <header className="inv-header">
           <div style={{display:'flex', alignItems:'center', gap:'6px', cursor:'pointer'}} onClick={() => setView('landing')}>
-            <svg width="26" height="28" viewBox="0 0 26 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <mask id="logo-mask-nav">
-                  <rect width="26" height="28" fill="white"/>
-                  <polyline points="-4,21 8.5,12 13.5,15 30,6" stroke="black" strokeWidth="3.25" strokeLinecap="butt" strokeLinejoin="miter"/>
-                </mask>
-              </defs>
-              <path d="M13 1.5 L24 5.5 L24 15 C24 21 19 25.5 13 27 C7 25.5 2 21 2 15 L2 5.5 Z" fill="var(--accent)" mask="url(#logo-mask-nav)"/>
-            </svg>
-            <h1 style={{fontWeight:700, margin:0}}>CS<span style={{color:'var(--accent)'}}>Assets</span></h1>
+            <Logo />
           </div>
           <div className="inv-header-right">
             <nav className="inv-nav">
@@ -615,7 +660,6 @@ export default function App() {
             steamId={steamId}
             profile={profile}
             onNavigate={setView}
-            onRefresh={refreshPrices}
           />
         )}
 
@@ -946,60 +990,7 @@ export default function App() {
               </button>
             </div>
           </div>
-          <div className="landing-visual-wrap">
-            <span className="lv-sparkle"         style={{top: '6%',    left: '-16%'}} />
-            <span className="lv-sparkle lv-sparkle--sm" style={{top: '28%',  right: '-12%'}} />
-            <span className="lv-sparkle lv-sparkle--lg" style={{bottom: '24%', left: '-20%'}} />
-            <span className="lv-sparkle lv-sparkle--sm" style={{top: '-6%',  right: '-10%'}} />
-            <span className="lv-sparkle"         style={{bottom: '6%',  right: '-14%'}} />
-          <div className="landing-visual">
-            <div className="lv-chart-card">
-              <div className="lv-chart-header">
-                <span className="lv-chart-label">Portfolio Value</span>
-                <span className="lv-badge-up">+18.3%</span>
-              </div>
-              <div className="lv-chart-value">$2,847<span className="lv-chart-cents">.32</span></div>
-              <svg viewBox="0 0 280 80" className="lv-svg" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="lv-grad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.28"/>
-                    <stop offset="100%" stopColor="var(--accent)" stopOpacity="0"/>
-                  </linearGradient>
-                </defs>
-                <path className="lv-area" d="M0,68 L30,60 L55,65 L80,52 L110,56 L135,43 L158,48 L180,37 L205,42 L228,28 L252,32 L280,18 L280,80 L0,80 Z"/>
-                <path className="lv-line" d="M0,68 L30,60 L55,65 L80,52 L110,56 L135,43 L158,48 L180,37 L205,42 L228,28 L252,32 L280,18"/>
-              </svg>
-            </div>
-            <div className="lv-items">
-              <div className="lv-item-card" style={{'--rarity': '#d32ce6'}}>
-                <div className="lv-item-img-wrap">
-                  <img className="lv-item-img" src="https://community.akamai.steamstatic.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyLwlcK3wiFO0POlPPNSMuWRDGKC_uJ_t-l9AXCxxEh14zjTztivci2ePQZ2W8NzTecD4BKwloLiYeqxtAOIj9gUyyngznQeF7I6QE8" alt="AK-47 | Vulcan" />
-                </div>
-                <div className="lv-item-info">
-                  <span className="lv-item-name">AK-47 | Vulcan</span>
-                  <span className="lv-item-wear">Minimal Wear</span>
-                </div>
-                <div className="lv-item-prices">
-                  <span className="lv-item-price">$419.62</span>
-                  <span className="lv-badge-up">+28.7%</span>
-                </div>
-              </div>
-              <div className="lv-item-card" style={{'--rarity': '#d32ce6'}}>
-                <div className="lv-item-img-wrap">
-                  <img className="lv-item-img" src="https://community.akamai.steamstatic.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyL2kpnj9h1Y-s2pZKtuK8-WF2KTzuBiseJ9cCW6khUz_T-GyNavdCqRawN1CMFwTOcO5hO7loXiY-zmsQKPi44QzHj22ikcvy11o7FVfFOBmfY" alt="Glock-18 | Vogue" />
-                </div>
-                <div className="lv-item-info">
-                  <span className="lv-item-name">Glock-18 | Vogue</span>
-                  <span className="lv-item-wear">Factory New</span>
-                </div>
-                <div className="lv-item-prices">
-                  <span className="lv-item-price">$18.65</span>
-                  <span className="lv-badge-up">+27.9%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          </div>
+          <LandingVisual />
         </div>}
       </div>
     )
@@ -1009,16 +1000,7 @@ export default function App() {
     <div className="inventory-page">
       <header className="inv-header">
         <div style={{display:'flex', alignItems:'center', gap:'6px', cursor:'pointer'}} onClick={() => setView('landing')}>
-          <svg width="26" height="28" viewBox="0 0 26 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <mask id="logo-mask-landing-nav">
-                <rect width="26" height="28" fill="white"/>
-                <polyline points="-4,21 8.5,12 13.5,15 30,6" stroke="black" strokeWidth="3.25" strokeLinecap="butt" strokeLinejoin="miter"/>
-              </mask>
-            </defs>
-            <path d="M13 1.5 L24 5.5 L24 15 C24 21 19 25.5 13 27 C7 25.5 2 21 2 15 L2 5.5 Z" fill="var(--accent)" mask="url(#logo-mask-landing-nav)"/>
-          </svg>
-          <h1 style={{fontWeight:700, margin:0}}>CS<span style={{color:'var(--accent)'}}>Assets</span></h1>
+          <Logo />
         </div>
         <div className="inv-header-right">
           <nav className="inv-nav">
@@ -1079,60 +1061,7 @@ export default function App() {
         {error && <p className="error">{error}</p>}
       </div>
 
-      <div className="landing-visual-wrap">
-        <span className="lv-sparkle"               style={{top: '6%',    left: '-16%'}} />
-        <span className="lv-sparkle lv-sparkle--sm" style={{top: '28%',  right: '-12%'}} />
-        <span className="lv-sparkle lv-sparkle--lg" style={{bottom: '24%', left: '-20%'}} />
-        <span className="lv-sparkle lv-sparkle--sm" style={{top: '-6%',  right: '-10%'}} />
-        <span className="lv-sparkle"               style={{bottom: '6%',  right: '-14%'}} />
-        <div className="landing-visual">
-        <div className="lv-chart-card">
-          <div className="lv-chart-header">
-            <span className="lv-chart-label">Portfolio Value</span>
-            <span className="lv-badge-up">+18.3%</span>
-          </div>
-          <div className="lv-chart-value">$2,847<span className="lv-chart-cents">.32</span></div>
-          <svg viewBox="0 0 280 80" className="lv-svg" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="lv-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.28"/>
-                <stop offset="100%" stopColor="var(--accent)" stopOpacity="0"/>
-              </linearGradient>
-            </defs>
-            <path className="lv-area" d="M0,68 L30,60 L55,65 L80,52 L110,56 L135,43 L158,48 L180,37 L205,42 L228,28 L252,32 L280,18 L280,80 L0,80 Z"/>
-            <path className="lv-line" d="M0,68 L30,60 L55,65 L80,52 L110,56 L135,43 L158,48 L180,37 L205,42 L228,28 L252,32 L280,18"/>
-          </svg>
-        </div>
-        <div className="lv-items">
-          <div className="lv-item-card" style={{'--rarity': '#d32ce6'}}>
-            <div className="lv-item-img-wrap">
-              <img className="lv-item-img" src="https://community.akamai.steamstatic.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyLwlcK3wiFO0POlPPNSMuWRDGKC_uJ_t-l9AXCxxEh14zjTztivci2ePQZ2W8NzTecD4BKwloLiYeqxtAOIj9gUyyngznQeF7I6QE8" alt="AK-47 | Vulcan" />
-            </div>
-            <div className="lv-item-info">
-              <span className="lv-item-name">AK-47 | Vulcan</span>
-              <span className="lv-item-wear">Minimal Wear</span>
-            </div>
-            <div className="lv-item-prices">
-              <span className="lv-item-price">$419.62</span>
-              <span className="lv-badge-up">+28.7%</span>
-            </div>
-          </div>
-          <div className="lv-item-card" style={{'--rarity': '#d32ce6'}}>
-            <div className="lv-item-img-wrap">
-              <img className="lv-item-img" src="https://community.akamai.steamstatic.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyL2kpnj9h1Y-s2pZKtuK8-WF2KTzuBiseJ9cCW6khUz_T-GyNavdCqRawN1CMFwTOcO5hO7loXiY-zmsQKPi44QzHj22ikcvy11o7FVfFOBmfY" alt="Glock-18 | Vogue" />
-            </div>
-            <div className="lv-item-info">
-              <span className="lv-item-name">Glock-18 | Vogue</span>
-              <span className="lv-item-wear">Factory New</span>
-            </div>
-            <div className="lv-item-prices">
-              <span className="lv-item-price">$18.65</span>
-              <span className="lv-badge-up">+27.9%</span>
-            </div>
-          </div>
-        </div>
-        </div>
-      </div>
+      <LandingVisual />
     </div>}
     </div>
   )
