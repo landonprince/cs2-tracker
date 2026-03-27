@@ -141,9 +141,44 @@ function DualValueLineChart({ steamData, csfloatData }) {
   )
 }
 
+// ── Top Movers Modal ────────────────────────────────────────────
+function TopMoversModal({ movers, onClose }) {
+  return (
+    <div className="alert-modal-overlay" onClick={onClose}>
+      <div className="alert-modal" style={{ minWidth: 320, maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+        <div className="alert-modal-header">
+          <span className="alert-modal-title">Top 5 Daily Movers</span>
+          <button className="modal-close" style={{ position: 'static', marginLeft: 'auto' }} onClick={onClose}>✕</button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+          {movers.map((m, idx) => (
+            <div key={m.name} className="dash-top-item" style={{ '--rarity': m.color }}>
+              <span className="dash-top-rank">#{idx + 1}</span>
+              <img src={`${STEAM_IMAGE_BASE}${m.iconUrl}`} alt={m.name} className="dash-top-img" />
+              <span className="dash-top-name">{stripWear(m.name)}</span>
+              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
+                <span className="dash-top-price">${m.curr.toFixed(2)}</span>
+                <span className={`item-price-pct ${m.delta >= 0 ? 'pct-up' : 'pct-down'}`}>
+                  {m.delta >= 0 ? '+' : ''}${m.delta.toFixed(2)} ({m.pct >= 0 ? '+' : ''}{m.pct.toFixed(1)}%)
+                </span>
+              </span>
+            </div>
+          ))}
+          {movers.length === 0 && (
+            <p style={{ color: 'var(--text)', fontSize: 13, textAlign: 'center', margin: '8px 0' }}>
+              No per-item change data yet — come back tomorrow.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Dashboard ──────────────────────────────────────────────────
-export default function Dashboard({ items, steamPrices, csfloatPrices, steamId, profile, onNavigate }) {
+export default function Dashboard({ items, steamPrices, csfloatPrices, prevSteamPrices = {}, steamId, profile, onNavigate }) {
   const [history, setHistory]   = useState(() => loadHistory(steamId))
+  const [showMovers, setShowMovers] = useState(false)
   const snapshotSaved           = useRef(false)
 
   const pricesLoaded  = Object.keys(steamPrices).length > 0
@@ -176,6 +211,23 @@ export default function Dashboard({ items, steamPrices, csfloatPrices, steamId, 
 
   const change24h     = pricesLoaded && prevEntry ? totalSteam - prevEntry.steam : null
   const change24hPct  = change24h != null && prevEntry.steam > 0 ? (change24h / prevEntry.steam) * 100 : null
+
+  const allMovers = Object.keys(prevSteamPrices).length > 0
+    ? items
+        .filter(i => steamPrices[i.market_hash_name] != null && prevSteamPrices[i.market_hash_name] != null)
+        .map(i => {
+          const name = i.market_hash_name
+          const curr = steamPrices[name]
+          const prev = prevSteamPrices[name]
+          const delta = curr - prev
+          const pct = prev > 0 ? (delta / prev) * 100 : 0
+          return { name, curr, delta, pct, iconUrl: i.icon_url, color: RARITY_COLORS[getRarity(i)] ?? '#6b6375' }
+        })
+    : []
+
+  const topMovers  = [...allMovers].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 5)
+  const topGainers = allMovers.filter(m => m.delta > 0).sort((a, b) => b.pct - a.pct).slice(0, 5)
+  const topLosers  = allMovers.filter(m => m.delta < 0).sort((a, b) => a.pct - b.pct).slice(0, 5)
   const totalReturn   = pricesLoaded && firstEntry && firstEntry.steam > 0
     ? ((totalSteam - firstEntry.steam) / firstEntry.steam) * 100 : null
   const avgItemValue  = pricesLoaded && items.length > 0 ? totalSteam / items.length : null
@@ -192,10 +244,15 @@ export default function Dashboard({ items, steamPrices, csfloatPrices, steamId, 
 
   return (
     <div className="dashboard">
+      {showMovers && <TopMoversModal movers={topMovers} onClose={() => setShowMovers(false)} />}
 
       {/* ── Greeting ── */}
       <div className="dash-greeting">
-        {profile?.avatar && <img src={profile.avatar} alt="avatar" className="dash-avatar" />}
+        {profile?.avatar && (
+          <a href={`https://steamcommunity.com/profiles/${profile.steamId}`} target="_blank" rel="noreferrer" className="dash-avatar-link">
+            <img src={profile.avatar} alt="avatar" className="dash-avatar" />
+          </a>
+        )}
         <div>
           <h2 className="dash-welcome">
             Welcome back{profile?.name ? `, ${profile.name}` : ''}
@@ -232,7 +289,12 @@ export default function Dashboard({ items, steamPrices, csfloatPrices, steamId, 
 
       {/* ── Performance stats ── */}
       <div className="dash-stats">
-        <div className="dash-stat">
+        <div
+          className="dash-stat"
+          style={change24h != null ? { cursor: 'pointer' } : undefined}
+          onClick={change24h != null ? () => setShowMovers(true) : undefined}
+          title={change24h != null ? 'Click to see top movers' : undefined}
+        >
           <span className="dash-stat-label">Daily Change</span>
           <span className={`dash-stat-value dash-stat-perf ${change24h == null ? '' : change24h >= 0 ? 'perf-up' : 'perf-down'}`}>
             {change24h == null
@@ -298,6 +360,57 @@ export default function Dashboard({ items, steamPrices, csfloatPrices, steamId, 
           </p>
         )}
       </div>
+
+      {/* ── Daily Movers ── */}
+      {pricesLoaded && allMovers.length > 0 && (
+        <div className="dash-columns">
+          <div className="dash-section">
+            <div className="dash-section-header">
+              <h3 className="dash-section-title">Top Gainers</h3>
+            </div>
+            {topGainers.length > 0 ? (
+              <div className="dash-top-items">
+                {topGainers.map((m, idx) => (
+                  <div className="dash-top-item" key={m.name} style={{ '--rarity': m.color }}>
+                    <span className="dash-top-rank">#{idx + 1}</span>
+                    <img src={`${STEAM_IMAGE_BASE}${m.iconUrl}`} alt={m.name} className="dash-top-img" />
+                    <span className="dash-top-name">{stripWear(m.name)}</span>
+                    <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
+                      <span className="dash-top-price">${m.curr.toFixed(2)}</span>
+                      <span className="item-price-pct pct-up">+{m.pct.toFixed(1)}%</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="dash-loading-msg">No gainers today.</p>
+            )}
+          </div>
+
+          <div className="dash-section">
+            <div className="dash-section-header">
+              <h3 className="dash-section-title">Top Losers</h3>
+            </div>
+            {topLosers.length > 0 ? (
+              <div className="dash-top-items">
+                {topLosers.map((m, idx) => (
+                  <div className="dash-top-item" key={m.name} style={{ '--rarity': m.color }}>
+                    <span className="dash-top-rank">#{idx + 1}</span>
+                    <img src={`${STEAM_IMAGE_BASE}${m.iconUrl}`} alt={m.name} className="dash-top-img" />
+                    <span className="dash-top-name">{stripWear(m.name)}</span>
+                    <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
+                      <span className="dash-top-price">${m.curr.toFixed(2)}</span>
+                      <span className="item-price-pct pct-down">{m.pct.toFixed(1)}%</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="dash-loading-msg">No losers today.</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Value by Category ── */}
       {pricesLoaded && sortedCategories.length > 0 && (

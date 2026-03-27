@@ -329,11 +329,19 @@ export default function App() {
   // Load previous day's item prices for % change display
   useEffect(() => {
     if (!steamId) return
+    // Seed immediately from localStorage
     const saved = loadPriceSnapshots(steamId)
     if (saved.prev) {
       setPrevSteamPrices(saved.prev.steam || {})
       setPrevCsfloatPrices(saved.prev.csfloat || {})
     }
+    // Override with server snapshot if available (updated by daily cron)
+    fetch('/api/price-snapshot')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.prev?.steam) setPrevSteamPrices(data.prev.steam)
+      })
+      .catch(() => {})
   }, [steamId])
 
   // Load alerts when authenticated
@@ -657,6 +665,7 @@ export default function App() {
             items={items}
             steamPrices={steamPrices}
             csfloatPrices={csfloatPrices}
+            prevSteamPrices={prevSteamPrices}
             steamId={steamId}
             profile={profile}
             onNavigate={setView}
