@@ -111,6 +111,7 @@ cron.schedule('0 2 * * *', () => {
 })
 
 if (IS_PROD) {
+  app.set('trust proxy', 1)
   app.use(express.static(resolve('./dist')))
 }
 
