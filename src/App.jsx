@@ -503,7 +503,12 @@ export default function App() {
     if (pricesFetched.current.csfloat) return
     pricesFetched.current.csfloat = true
     startLoading()
-    const uniqueNames = [...new Set(itemList.map(i => i.market_hash_name).filter(Boolean))]
+    const CSFLOAT_TYPES = new Set(['Weapon', 'Knife', 'Gloves'])
+    const typeByName = {}
+    for (const item of itemList) {
+      if (item.market_hash_name) typeByName[item.market_hash_name] = getItemType(item)
+    }
+    const uniqueNames = [...new Set(itemList.map(i => i.market_hash_name).filter(n => n && CSFLOAT_TYPES.has(typeByName[n])))]
     const results = await fetchInBatches(uniqueNames, async name => {
       try {
         const r = await fetch(`/csfloat/history/${encodeURIComponent(name)}/sales`)
